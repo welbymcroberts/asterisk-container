@@ -15,14 +15,13 @@ RUN apt-get install --yes -qq --no-install-recommends --no-install-suggests \
   bzip2 patch \
   ca-certificates
 WORKDIR /usr/src/
-RUN curl -LO https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-22-current.tar.gz && tar xvf asterisk-22-current.tar.gz
-WORKDIR /usr/src//asterisk-22.5.2/
-RUN svn export https://svn.digium.com/svn/thirdparty/mp3/trunk addons/mp3 $@
-RUN sed -i -e '/#include "asterisk.h"/i#define ASTMM_LIBC ASTMM_REDIRECT' \
-        addons/mp3/interface.c
-RUN ./configure --prefix=/asterisk
-RUN make menuselect.makeopts
-RUN menuselect/menuselect --disable CORE-SOUNDS-EN-GSM menuselect.makeopts && \
+RUN curl -LO https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-22-current.tar.gz && tar xvf asterisk-22-current.tar.gz && rm asterisk-22-current.tar.gz
+RUN cd asterisk-22.* && svn export https://svn.digium.com/svn/thirdparty/mp3/trunk addons/mp3 && \
+sed -i -e '/#include "asterisk.h"/i#define ASTMM_LIBC ASTMM_REDIRECT' \
+        addons/mp3/interface.c && \
+./configure --prefix=/asterisk && \
+make menuselect.makeopts && \
+menuselect/menuselect --disable CORE-SOUNDS-EN-GSM menuselect.makeopts && \
 menuselect/menuselect --disable MOH-OPSOUND-WAV menuselect.makeopts && \
 menuselect/menuselect --enable chan_ooh323 menuselect.makeopts && \
 menuselect/menuselect --enable format_mp3 menuselect.makeopts && \
@@ -33,15 +32,16 @@ menuselect/menuselect --enable codec_opus menuselect.makeopts && \
 menuselect/menuselect --enable codec_silk menuselect.makeopts && \
 menuselect/menuselect --enable codec_siren7 menuselect.makeopts && \
 menuselect/menuselect --enable codec_siren14 menuselect.makeopts && \
-menuselect/menuselect --enable RADIO_RELAX menuselect.makeopts
-RUN make -j $(( $(nproc) + $(nproc) / 2 )) all
-RUN make install
-RUN make basic-pbx
+menuselect/menuselect --enable RADIO_RELAX menuselect.makeopts && \
+make -j $(( $(nproc) + $(nproc) / 2 )) all && \
+make install && \
+make basic-pbx
 
 
 
 FROM docker.io/library/ubuntu:24.04
 COPY --from=build /asterisk /asterisk
+WORKDIR /asterisk
 RUN apt-get update && apt-get full-upgrade --yes && apt-get install --yes -qq --no-install-recommends --no-install-suggests \
   pkg-config \
   libedit2 libjansson4 libsqlite3-0 uuid libxml2 \

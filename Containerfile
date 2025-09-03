@@ -55,3 +55,4 @@ RUN apt-get update && apt-get full-upgrade --yes && apt-get install --yes -qq --
   bzip2 \
   ca-certificates
 
+CMD /asterisk/sbin/asterisk -vvvgf
